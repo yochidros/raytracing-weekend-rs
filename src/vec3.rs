@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Sub};
 
-#[derive(Debug)]
+#[derive(Clone, Copy)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
@@ -41,6 +41,19 @@ impl Vec3 {
             self.x * other.y - self.y * other.x,
         )
     }
+}
+
+impl std::fmt::Debug for Vec3 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Vec3")
+            .field(&self.x)
+            .field(&self.y)
+            .field(&self.z)
+            .finish()
+    }
+}
+pub fn unit_vector(v: Vec3) -> Vec3 {
+    v / v.length()
 }
 
 impl Index<usize> for Vec3 {
