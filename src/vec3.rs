@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub};
 
 #[derive(Clone, Copy)]
 pub struct Vec3 {
@@ -68,6 +68,12 @@ impl Index<usize> for Vec3 {
     }
 }
 
+impl Neg for Vec3 {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        Self::new(-self.x, -self.y, -self.z)
+    }
+}
 impl AddAssign<Vec3> for Vec3 {
     fn add_assign(&mut self, other: Self) {
         self.x += other.x;

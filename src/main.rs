@@ -1,36 +1,62 @@
 use crate::{
     color::{write_color, Color},
+    hit_record::{Hittable, HittableList},
+    interval::Interval,
     ray::Ray,
     vec3::{unit_vector, Point3, Vec3},
 };
 
 mod color;
+mod hit_record;
+mod interval;
 mod ray;
+mod sphere;
 mod vec3;
 
-fn hit_sphere(center: Point3, radius: f32, ray: Ray) -> f32 {
-    // object direction from ray origin to sphere center
-    let oc = center - ray.origin;
-    let a = ray.direction.length_squared();
-    let h = ray.direction.dot(oc);
-    let c = oc.length_squared() - radius * radius;
-    let discriminant = h * h - a * c;
-    // let a = ray.direction.dot(ray.direction);
-    // let b = -2.0 * ray.direction.dot(oc);
-    // let c = oc.dot(oc) - radius * radius;
-    // let discriminant = b * b - 4.0 * a * c;
-    if discriminant < 0.0 {
-        return -1.0;
-    }
-    (h - discriminant.sqrt()) / a
-    // (-b - discriminant.sqrt()) / (2.0 * a)
-}
+// fn hit_sphere(center: Point3, radius: f32, ray: Ray) -> f32 {
+//     // object direction from ray origin to sphere center
+//     let oc = center - ray.origin;
+//     let a = ray.direction.length_squared();
+//     let h = ray.direction.dot(oc);
+//     let c = oc.length_squared() - radius * radius;
+//     let discriminant = h * h - a * c;
+//     // let a = ray.direction.dot(ray.direction);
+//     // let b = -2.0 * ray.direction.dot(oc);
+//     // let c = oc.dot(oc) - radius * radius;
+//     // let discriminant = b * b - 4.0 * a * c;
+//     if discriminant < 0.0 {
+//         return -1.0;
+//     }
+//     (h - discriminant.sqrt()) / a
+//     // (-b - discriminant.sqrt()) / (2.0 * a)
+// }
 
-fn ray_color(ray: Ray) -> Color {
-    let t = hit_sphere(Point3::new(0.0, 0.0, -1f32), 0.5, ray);
-    if t > 0.0 {
-        let n = unit_vector(ray.at(t) - Point3::new(0.0, 0.0, -1f32));
-        return 0.5 * Color::new(n.x + 1.0, n.y + 1.0, n.z + 1.0);
+// fn ray_color(ray: Ray) -> Color {
+//     let t = hit_sphere(Point3::new(0.0, 0.0, -1f32), 0.5, ray);
+//     if t > 0.0 {
+//         let n = unit_vector(ray.at(t) - Point3::new(0.0, 0.0, -1f32));
+//         return 0.5 * Color::new(n.x + 1.0, n.y + 1.0, n.z + 1.0);
+//     }
+//
+//     let unit_direction = unit_vector(ray.direction);
+//     let a = 0.5 * (unit_direction.y + 1.0);
+//     (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
+// }
+
+fn ray_color(ray: Ray, world: &mut HittableList) -> Color {
+    let mut record = hit_record::HitRecord {
+        p: Point3::zero(),
+        normal_vec: Vec3::zero(),
+        t: 0.0,
+        front_face: false,
+    };
+    if world.hit(&ray, Interval::new(0.0, f32::INFINITY), &mut record) {
+        return 0.5
+            * Color::new(
+                record.normal_vec.x + 1.0,
+                record.normal_vec.y + 1.0,
+                record.normal_vec.z + 1.0,
+            );
     }
 
     let unit_direction = unit_vector(ray.direction);
@@ -64,6 +90,26 @@ fn main() {
 
     let pixel00_location = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
+    // world
+    let mut world = HittableList::new();
+    world.add(Box::new(sphere::Sphere::new(
+        Point3::new(0.0, 0.0, -1.0),
+        0.2,
+    )));
+    // world.add(Box::new(sphere::Sphere::new(
+    //     Point3::new(0.0, -100.5, -1.0),
+    //     100.0,
+    // )));
+    // let base = Point3::new(0.6, 0.0, -3.0);
+    // let dir = unit_vector(Vec3::new(1.0, 1.0, 0.0));
+    // let shifted_sphere = base + dir * 1.0;
+    // let s = sphere::Sphere::new(base, 0.8);
+    // world.add(Box::new(s));
+    // world.add(Box::new(sphere::Sphere::new(
+    //     Point3::new(1.5, -0.3, -1.5),
+    //     0.214,
+    // )));
+
     eprintln!("P3");
     eprintln!("{} {}", image_width, image_height);
     eprintln!("255"); // colors range from 0 to 255
@@ -79,7 +125,7 @@ fn main() {
                 origin: camera_center,
                 direction: ray_direction,
             };
-            let pixel_color = ray_color(ray);
+            let pixel_color = ray_color(ray, &mut world);
             write_color(pixel_color);
         }
     }
