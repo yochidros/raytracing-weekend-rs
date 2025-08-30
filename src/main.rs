@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{f32::consts::PI, sync::Arc};
 
 use crate::{
     camera::Camera,
@@ -6,7 +6,7 @@ use crate::{
     hit_record::HittableList,
     material::{Dielectric, Lambertian, Metal},
     sphere::Sphere,
-    vec3::Point3,
+    vec3::{Point3, Vec3},
 };
 
 mod camera;
@@ -22,10 +22,27 @@ mod vec3;
 fn main() {
     let aspect_ratio = 16f32 / 9f32;
     let image_width = 400u32;
-    let mut camera = Camera::new(aspect_ratio, image_width, 80.0, 50);
+    // let r = (PI / 4.0).cos();
+
+    let mut camera = Camera::new(
+        aspect_ratio,
+        image_width,
+        10.0,
+        80.0,
+        10,
+        Point3::new(0.0, 8.0, 20.0),
+        Point3::new(0.0, 0.0, -1.0),
+        Vec3::new(0.0, 2.0, 0.0),
+    );
 
     // world
     let mut world = HittableList::new();
+
+    // let mat_left = Arc::new(Lambertian::new(Color::new(0.0, 0.0, 1.0)));
+    // let mat_right = Arc::new(Lambertian::new(Color::new(1.0, 0.0, 0.0)));
+    //
+    // world.add(Box::new(Sphere::new(Vec3::new(-r, 0.0, -1.0), r, mat_left)));
+    // world.add(Box::new(Sphere::new(Vec3::new(r, 0.0, -1.0), r, mat_right)));
 
     let mat_center = Arc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
     world.add(Box::new(Sphere::new(
@@ -34,16 +51,23 @@ fn main() {
         mat_center,
     )));
 
-    let mat_left = Arc::new(Dielectric::new(1.0 / 1.33));
+    let mat_left = Arc::new(Dielectric::new(1.5));
     world.add(Box::new(Sphere::new(
         Point3::new(-1.0, 0.0, -1.0),
         0.5,
         mat_left,
     )));
 
+    let mat_bubble = Arc::new(Dielectric::new(1.0 / 1.5));
+    world.add(Box::new(Sphere::new(
+        Point3::new(-1.0, 0.0, -1.0),
+        0.4,
+        mat_bubble,
+    )));
+
     let mat_right = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 1.0));
     world.add(Box::new(Sphere::new(
-        Point3::new(1.0, 0.0, -1.0),
+        Point3::new(1.5, 2.0, -1.0),
         0.5,
         mat_right,
     )));
@@ -54,23 +78,5 @@ fn main() {
         100.0,
         mat_ground,
     )));
-
-    // world.add(Box::new(sphere::Sphere::new(
-    //     Point3::new(0.0, 0.0, -1.0),
-    //     0.5,
-    // )));
-    // world.add(Box::new(sphere::Sphere::new(
-    //     Point3::new(0.0, -100.5, -1.0),
-    //     100.0,
-    // )));
-    // let base = Point3::new(0.6, 0.0, -3.0);
-    // let dir = unit_vector(Vec3::new(1.0, 1.0, 0.0));
-    // let shifted_sphere = base + dir * 1.0;
-    // let s = sphere::Sphere::new(base, 0.8);
-    // world.add(Box::new(s));
-    // world.add(Box::new(sphere::Sphere::new(
-    //     Point3::new(1.5, -0.3, -1.5),
-    //     0.214,
-    // )));
-    camera.render(&mut world);
+    camera.render(&world);
 }

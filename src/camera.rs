@@ -11,6 +11,10 @@ pub struct Camera {
     pub aspect_ratio: f32,
     pub image_width: u32,
     pub samples_per_pixel: f32,
+    pub vfov: f32, // angle
+    pub lookfrom: Point3,
+    pub lookat: Point3,
+    pub vup: Vec3,
 
     image_height: u32,
     center: Point3,
@@ -19,19 +23,30 @@ pub struct Camera {
     pixel_delta_v: Vec3,
     pixel_samples_scale: f32,
     max_depth: u32,
+    u: Vec3,
+    v: Vec3,
+    w: Vec3,
 }
 
 impl Camera {
     pub fn new(
         aspect_ratio: f32,
         image_width: u32,
+        vfov: f32,
         samples_per_pixel: f32,
         max_depth: u32,
+        lookfrom: Point3,
+        lookat: Point3,
+        vup: Vec3,
     ) -> Self {
         Self {
             aspect_ratio,
             image_width,
             samples_per_pixel,
+            vfov,
+            lookfrom,
+            lookat,
+            vup,
             image_height: 0,
             center: Point3::zero(),
             pixel00_location: Point3::zero(),
@@ -39,6 +54,9 @@ impl Camera {
             pixel_delta_v: Vec3::zero(),
             pixel_samples_scale: 0.0,
             max_depth,
+            v: Vec3::zero(),
+            u: Vec3::zero(),
+            w: Vec3::zero(),
         }
     }
     pub fn default() -> Self {
@@ -46,6 +64,10 @@ impl Camera {
             aspect_ratio: 1.0,
             image_width: 100,
             samples_per_pixel: 10.0,
+            vfov: 90.0,
+            lookfrom: Point3::new(0.0, 0.0, 0.0),
+            lookat: Point3::new(0.0, 0.0, -1.0),
+            vup: Vec3::new(0.0, 1.0, 0.0),
             image_height: 0,
             center: Point3::zero(),
             pixel00_location: Point3::zero(),
@@ -53,6 +75,9 @@ impl Camera {
             pixel_delta_v: Vec3::zero(),
             pixel_samples_scale: 0.0,
             max_depth: 10,
+            v: Vec3::zero(),
+            u: Vec3::zero(),
+            w: Vec3::zero(),
         }
     }
 
@@ -97,17 +122,23 @@ impl Camera {
         } else {
             self.image_height
         };
-        self.center = Point3::zero();
+        self.center = self.lookfrom;
         self.pixel_samples_scale = 1.0 / self.samples_per_pixel;
 
-        let focal_length = 1f32;
+        let focal_length = (self.lookfrom - self.lookat).length();
+        let theta = self.vfov.to_radians();
+        let h = (theta / 2f32).tan();
         //  viewport_width: 3.5555556, viewport_height: 2
-        let viewport_height = 2f32;
+        let viewport_height = 2f32 * h * focal_length;
         let viewport_width = viewport_height * (self.image_width as f32 / self.image_height as f32);
 
+        self.w = unit_vector(self.lookfrom - self.lookat);
+        self.u = unit_vector(self.vup.cross(self.w));
+        self.v = self.w.cross(self.u);
+
         // edges
-        let viewport_u = Vec3::new(viewport_width, 0f32, 0f32);
-        let viewport_v = Vec3::new(0f32, -viewport_height, 0f32);
+        let viewport_u = viewport_width * self.u; // Vec3::new(viewport_width, 0f32, 0f32);
+        let viewport_v = viewport_height * -self.v; //Vec3::new(0f32, -viewport_height, 0f32);
 
         // delta vector from pixel to pixel
         self.pixel_delta_u = viewport_u / self.image_width as f32;
@@ -115,10 +146,8 @@ impl Camera {
 
         // カメラを中心とする場合にviewportの左上の位置
         // shift left by half viewport_u and up by half viewport_v
-        let viewport_upper_left = self.center
-            - Vec3::new(0f32, 0f32, focal_length)
-            - viewport_u / 2f32
-            - viewport_v / 2f32;
+        let viewport_upper_left =
+            self.center - (focal_length * self.w) - viewport_u / 2f32 - viewport_v / 2f32;
 
         self.pixel00_location =
             viewport_upper_left + 0.5 * (self.pixel_delta_u + self.pixel_delta_v);
