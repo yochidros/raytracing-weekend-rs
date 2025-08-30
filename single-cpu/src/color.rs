@@ -30,3 +30,4 @@ pub fn write_color(pixel_color: Color) {
 
     eprintln!("{rbyte} {gbyte} {bbyte}");
 }
+

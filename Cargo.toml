@@ -1,8 +1,10 @@
-[package]
-name = "raytracing"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = [
+    "single-cpu",
+]
+resolver = "3"
 
-[dependencies]
-rand = "0.9"
-once_cell = "1.21.3"
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+authors = ["yochidros"]

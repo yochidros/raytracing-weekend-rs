@@ -17,3 +17,4 @@ pub fn f32_random() -> f32 {
 pub fn f32_random_range(min: f32, max: f32) -> f32 {
     min + (max - min) * f32_random()
 }
+

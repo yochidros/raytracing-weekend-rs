@@ -1,0 +1,10 @@
+[package]
+name = "single-cpu"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+rand = "0.9"
+once_cell = "1.21.3"
+

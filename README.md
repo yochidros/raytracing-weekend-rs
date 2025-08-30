@@ -17,3 +17,15 @@ A compact ray tracer implemented in Rust. It renders PPM images and demonstrates
 - Materials with diffuse/metal/dielectric scattering (`material.rs`).
 - Camera with FOV, focus, sampling, and aspect control (`camera.rs`).
 - Minimal scene setup in `main.rs` producing a PPM image.
+
+## Workspace
+
+This repository is a Cargo workspace. The current CPU renderer lives in the `single-cpu` crate.
+
+- Build: `cargo build` or `cargo build -p single-cpu`
+- Run (debug): `cargo run -p single-cpu`
+- Run (release): `cargo run -p single-cpu --release`
+- Lint: `cargo clippy --all-targets -- -D warnings`
+- Format: `cargo fmt --all`
+
+The renderer writes a PPM image (e.g., `test.ppm`) to the repository root when run from the workspace root.

@@ -82,3 +82,4 @@ fn main() {
     )));
     camera.render(&world);
 }
+

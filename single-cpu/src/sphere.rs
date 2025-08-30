@@ -63,3 +63,4 @@ impl Hittable for Sphere {
         Some(record)
     }
 }
+

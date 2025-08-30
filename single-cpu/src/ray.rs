@@ -22,3 +22,4 @@ impl std::fmt::Debug for Ray {
             .finish()
     }
 }
+

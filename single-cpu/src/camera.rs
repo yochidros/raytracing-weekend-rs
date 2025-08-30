@@ -205,3 +205,4 @@ impl Camera {
         (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
     }
 }
+

@@ -212,3 +212,4 @@ impl Div<f32> for Vec3 {
         (1f32 / rhs) * self
     }
 }
+

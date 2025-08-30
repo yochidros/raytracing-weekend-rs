@@ -94,3 +94,4 @@ impl Material for Dielectric {
         (Ray::new(hit_record.p, direction), attenuation)
     }
 }
+
