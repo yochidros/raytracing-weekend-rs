@@ -4,7 +4,7 @@ use crate::{
     camera::Camera,
     color::Color,
     hit_record::HittableList,
-    material::{Lambertian, Metal},
+    material::{Dielectric, Lambertian, Metal},
     sphere::Sphere,
     vec3::Point3,
 };
@@ -34,14 +34,14 @@ fn main() {
         mat_center,
     )));
 
-    let mat_left = Arc::new(Metal::new(Color::new(0.8, 0.8, 0.8)));
+    let mat_left = Arc::new(Dielectric::new(1.0 / 1.33));
     world.add(Box::new(Sphere::new(
         Point3::new(-1.0, 0.0, -1.0),
         0.5,
         mat_left,
     )));
 
-    let mat_right = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2)));
+    let mat_right = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 1.0));
     world.add(Box::new(Sphere::new(
         Point3::new(1.0, 0.0, -1.0),
         0.5,

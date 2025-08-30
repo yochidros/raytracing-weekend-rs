@@ -100,6 +100,13 @@ pub fn random_on_hemisphere(normal_vec: Vec3) -> Vec3 {
 pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
     v - 2.0 * v.dot(n) * n
 }
+#[inline]
+pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
+    let cos_theta = -uv.dot(n).min(1.0);
+    let r_rout_perp = etai_over_etat * (uv + cos_theta * n);
+    let r_rout_parallel = -(1.0 - r_rout_perp.length_squared()).abs().sqrt() * n;
+    r_rout_perp + r_rout_parallel
+}
 
 impl Index<usize> for Vec3 {
     type Output = f32;
