@@ -27,13 +27,15 @@ fn main() {
     let mut camera = Camera::new(
         aspect_ratio,
         image_width,
-        10.0,
+        20.0,
         80.0,
-        10,
-        Point3::new(0.0, 8.0, 20.0),
+        30,
+        Point3::new(-2.0, 2.0, 1.0),
         Point3::new(0.0, 0.0, -1.0),
-        Vec3::new(0.0, 2.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
     );
+    camera.defocus_angle = 10.0;
+    camera.focus_distance = 3.4;
 
     // world
     let mut world = HittableList::new();
@@ -67,7 +69,7 @@ fn main() {
 
     let mat_right = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 1.0));
     world.add(Box::new(Sphere::new(
-        Point3::new(1.5, 2.0, -1.0),
+        Point3::new(1.0, 0.0, -1.0),
         0.5,
         mat_right,
     )));

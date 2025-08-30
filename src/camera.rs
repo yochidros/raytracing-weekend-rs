@@ -4,7 +4,9 @@ use crate::{
     interval::Interval,
     ray::Ray,
     utils::f32_random,
-    vec3::{random_on_hemisphere, random_unit_vector, unit_vector, Point3, Vec3},
+    vec3::{
+        random_in_unit_disk, random_on_hemisphere, random_unit_vector, unit_vector, Point3, Vec3,
+    },
 };
 
 pub struct Camera {
@@ -15,6 +17,8 @@ pub struct Camera {
     pub lookfrom: Point3,
     pub lookat: Point3,
     pub vup: Vec3,
+    pub defocus_angle: f32,
+    pub focus_distance: f32,
 
     image_height: u32,
     center: Point3,
@@ -26,6 +30,8 @@ pub struct Camera {
     u: Vec3,
     v: Vec3,
     w: Vec3,
+    defocus_disk_u: Vec3,
+    defocus_disk_v: Vec3,
 }
 
 impl Camera {
@@ -47,6 +53,8 @@ impl Camera {
             lookfrom,
             lookat,
             vup,
+            defocus_angle: 0.0,
+            focus_distance: 10.0,
             image_height: 0,
             center: Point3::zero(),
             pixel00_location: Point3::zero(),
@@ -57,6 +65,8 @@ impl Camera {
             v: Vec3::zero(),
             u: Vec3::zero(),
             w: Vec3::zero(),
+            defocus_disk_u: Vec3::zero(),
+            defocus_disk_v: Vec3::zero(),
         }
     }
     pub fn default() -> Self {
@@ -68,6 +78,8 @@ impl Camera {
             lookfrom: Point3::new(0.0, 0.0, 0.0),
             lookat: Point3::new(0.0, 0.0, -1.0),
             vup: Vec3::new(0.0, 1.0, 0.0),
+            defocus_angle: 0.0,
+            focus_distance: 10.0,
             image_height: 0,
             center: Point3::zero(),
             pixel00_location: Point3::zero(),
@@ -78,6 +90,8 @@ impl Camera {
             v: Vec3::zero(),
             u: Vec3::zero(),
             w: Vec3::zero(),
+            defocus_disk_u: Vec3::zero(),
+            defocus_disk_v: Vec3::zero(),
         }
     }
 
@@ -107,12 +121,20 @@ impl Camera {
             + ((i as f32 + offset.x) * self.pixel_delta_u)
             + ((j as f32 + offset.y) * self.pixel_delta_v);
 
-        let ray_origin = self.center;
+        let ray_origin = if self.defocus_angle <= 0.0 {
+            self.center
+        } else {
+            self.defocus_disk_sample()
+        };
         let ray_direction = pixel_sample - ray_origin;
         Ray::new(ray_origin, ray_direction)
     }
     fn sample_square(&self) -> Vec3 {
         Vec3::new(f32_random() - 0.5, f32_random(), 0.0)
+    }
+    fn defocus_disk_sample(&self) -> Point3 {
+        let p = random_in_unit_disk();
+        self.center + (p.x * self.defocus_disk_u) + (p.y * self.defocus_disk_v)
     }
 
     fn initialize(&mut self) {
@@ -125,11 +147,11 @@ impl Camera {
         self.center = self.lookfrom;
         self.pixel_samples_scale = 1.0 / self.samples_per_pixel;
 
-        let focal_length = (self.lookfrom - self.lookat).length();
+        // let focal_length = (self.lookfrom - self.lookat).length();
         let theta = self.vfov.to_radians();
         let h = (theta / 2f32).tan();
         //  viewport_width: 3.5555556, viewport_height: 2
-        let viewport_height = 2f32 * h * focal_length;
+        let viewport_height = 2f32 * h * self.focus_distance;
         let viewport_width = viewport_height * (self.image_width as f32 / self.image_height as f32);
 
         self.w = unit_vector(self.lookfrom - self.lookat);
@@ -147,10 +169,14 @@ impl Camera {
         // カメラを中心とする場合にviewportの左上の位置
         // shift left by half viewport_u and up by half viewport_v
         let viewport_upper_left =
-            self.center - (focal_length * self.w) - viewport_u / 2f32 - viewport_v / 2f32;
+            self.center - (self.focus_distance * self.w) - viewport_u / 2f32 - viewport_v / 2f32;
 
         self.pixel00_location =
             viewport_upper_left + 0.5 * (self.pixel_delta_u + self.pixel_delta_v);
+
+        let defocus_radius = self.focus_distance * (self.defocus_angle / 2.0).to_radians().tan();
+        self.defocus_disk_u = self.u * defocus_radius;
+        self.defocus_disk_v = self.v * defocus_radius;
     }
 
     fn ray_color(&self, ray: Ray, depth: u32, world: &HittableList) -> Color {

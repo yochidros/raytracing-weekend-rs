@@ -76,6 +76,20 @@ pub fn unit_vector(v: Vec3) -> Vec3 {
 }
 
 #[inline]
+pub fn random_in_unit_disk() -> Vec3 {
+    loop {
+        let p = Vec3::new(
+            f32_random_range(-1.0, 1.0),
+            f32_random_range(-1.0, 1.0),
+            0.0,
+        );
+        if p.length_squared() < 1.0 {
+            return p;
+        }
+    }
+}
+
+#[inline]
 pub fn random_unit_vector() -> Vec3 {
     loop {
         let p = Vec3::random_range(-1.0, 1.0);
