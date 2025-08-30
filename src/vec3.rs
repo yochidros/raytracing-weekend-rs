@@ -1,5 +1,7 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub};
 
+use crate::utils::{f32_random, f32_random_range};
+
 #[derive(Clone, Copy)]
 pub struct Vec3 {
     pub x: f32,
@@ -27,6 +29,17 @@ impl Vec3 {
     pub fn length_squared(&self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
+    pub fn random() -> Self {
+        Self::new(f32_random(), f32_random(), f32_random())
+    }
+
+    pub fn random_range(min: f32, max: f32) -> Self {
+        Self::new(
+            f32_random_range(min, max),
+            f32_random_range(min, max),
+            f32_random_range(min, max),
+        )
+    }
 
     /// ベクトルがどのくらい同じ方向かどうか
     pub fn dot(&self, other: Vec3) -> f32 {
@@ -52,8 +65,32 @@ impl std::fmt::Debug for Vec3 {
             .finish()
     }
 }
+
+#[inline]
 pub fn unit_vector(v: Vec3) -> Vec3 {
     v / v.length()
+}
+
+#[inline]
+pub fn random_unit_vector() -> Vec3 {
+    loop {
+        let p = Vec3::random_range(-1.0, 1.0);
+        let lensq = p.length_squared();
+        if lensq <= 1.0 && 1e-12 < lensq {
+            return p / lensq.sqrt();
+        }
+    }
+}
+
+#[inline]
+pub fn random_on_hemisphere(normal_vec: Vec3) -> Vec3 {
+    let on_unit_sphere = random_unit_vector();
+    if on_unit_sphere.dot(normal_vec) > 0.0 {
+        // same hemisphere as normal vector
+        on_unit_sphere
+    } else {
+        -on_unit_sphere
+    }
 }
 
 impl Index<usize> for Vec3 {

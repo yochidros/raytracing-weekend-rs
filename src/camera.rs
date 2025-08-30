@@ -3,45 +3,60 @@ use crate::{
     hit_record::{self, Hittable, HittableList},
     interval::Interval,
     ray::Ray,
-    vec3::{unit_vector, Point3, Vec3},
+    utils::f32_random,
+    vec3::{random_on_hemisphere, random_unit_vector, unit_vector, Point3, Vec3},
 };
 
 pub struct Camera {
     pub aspect_ratio: f32,
     pub image_width: u32,
+    pub samples_per_pixel: f32,
 
     image_height: u32,
     center: Point3,
     pixel00_location: Point3,
     pixel_delta_u: Vec3,
     pixel_delta_v: Vec3,
+    pixel_samples_scale: f32,
+    max_depth: u32,
 }
 
 impl Camera {
-    pub fn new(aspect_ratio: f32, image_width: u32) -> Self {
+    pub fn new(
+        aspect_ratio: f32,
+        image_width: u32,
+        samples_per_pixel: f32,
+        max_depth: u32,
+    ) -> Self {
         Self {
             aspect_ratio,
             image_width,
+            samples_per_pixel,
             image_height: 0,
             center: Point3::zero(),
             pixel00_location: Point3::zero(),
             pixel_delta_u: Vec3::zero(),
             pixel_delta_v: Vec3::zero(),
+            pixel_samples_scale: 0.0,
+            max_depth,
         }
     }
     pub fn default() -> Self {
         Self {
             aspect_ratio: 1.0,
             image_width: 100,
+            samples_per_pixel: 10.0,
             image_height: 0,
             center: Point3::zero(),
             pixel00_location: Point3::zero(),
             pixel_delta_u: Vec3::zero(),
             pixel_delta_v: Vec3::zero(),
+            pixel_samples_scale: 0.0,
+            max_depth: 10,
         }
     }
 
-    pub fn render(&mut self, world: &mut HittableList) {
+    pub fn render(&mut self, world: &HittableList) {
         self.initialize();
 
         eprintln!("P3");
@@ -51,20 +66,28 @@ impl Camera {
         for j in 0..self.image_height {
             print!("\rScanning line {}/{}", j + 1, self.image_height);
             for i in 0..self.image_width {
-                let pixel_center = self.pixel00_location
-                    + (i as f32 * self.pixel_delta_u)
-                    + (j as f32 * self.pixel_delta_v);
-                // AB direction is from A to B = AB = B - A
-                let ray_direction = pixel_center - self.center;
-                let ray = Ray {
-                    origin: self.center,
-                    direction: ray_direction,
-                };
-                let pixel_color = self.ray_color(ray, world);
-                write_color(pixel_color);
+                let mut pixel_color = Color::zero();
+                for _ in 0..self.samples_per_pixel as u32 {
+                    let ray = self.get_ray(i, j);
+                    pixel_color += self.ray_color(ray, self.max_depth, world);
+                }
+                write_color(pixel_color * self.pixel_samples_scale);
             }
         }
         print!("\rDone.                           \n");
+    }
+    fn get_ray(&self, i: u32, j: u32) -> Ray {
+        let offset = self.sample_square();
+        let pixel_sample = self.pixel00_location
+            + ((i as f32 + offset.x) * self.pixel_delta_u)
+            + ((j as f32 + offset.y) * self.pixel_delta_v);
+
+        let ray_origin = self.center;
+        let ray_direction = pixel_sample - ray_origin;
+        Ray::new(ray_origin, ray_direction)
+    }
+    fn sample_square(&self) -> Vec3 {
+        Vec3::new(f32_random() - 0.5, f32_random(), 0.0)
     }
 
     fn initialize(&mut self) {
@@ -75,6 +98,7 @@ impl Camera {
             self.image_height
         };
         self.center = Point3::zero();
+        self.pixel_samples_scale = 1.0 / self.samples_per_pixel;
 
         let focal_length = 1f32;
         //  viewport_width: 3.5555556, viewport_height: 2
@@ -100,20 +124,20 @@ impl Camera {
             viewport_upper_left + 0.5 * (self.pixel_delta_u + self.pixel_delta_v);
     }
 
-    fn ray_color(&self, ray: Ray, world: &mut HittableList) -> Color {
+    fn ray_color(&self, ray: Ray, depth: u32, world: &HittableList) -> Color {
+        if depth == 0 {
+            return Color::zero();
+        }
         let mut record = hit_record::HitRecord {
             p: Point3::zero(),
             normal_vec: Vec3::zero(),
             t: 0.0,
             front_face: false,
         };
-        if world.hit(&ray, Interval::new(0.0, f32::INFINITY), &mut record) {
-            return 0.5
-                * Color::new(
-                    record.normal_vec.x + 1.0,
-                    record.normal_vec.y + 1.0,
-                    record.normal_vec.z + 1.0,
-                );
+        if world.hit(&ray, Interval::new(0.0001, f32::INFINITY), &mut record) {
+            let direction = record.normal_vec + random_unit_vector();
+            // let direction = random_on_hemisphere(record.normal_vec);
+            return 0.5 * self.ray_color(Ray::new(record.p, direction), depth - 1, world);
         }
 
         let unit_direction = unit_vector(ray.direction);
