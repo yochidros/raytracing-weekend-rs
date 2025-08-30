@@ -128,16 +128,21 @@ impl Camera {
         if depth == 0 {
             return Color::zero();
         }
-        let mut record = hit_record::HitRecord {
-            p: Point3::zero(),
-            normal_vec: Vec3::zero(),
-            t: 0.0,
-            front_face: false,
-        };
-        if world.hit(&ray, Interval::new(0.0001, f32::INFINITY), &mut record) {
-            let direction = record.normal_vec + random_unit_vector();
-            // let direction = random_on_hemisphere(record.normal_vec);
-            return 0.5 * self.ray_color(Ray::new(record.p, direction), depth - 1, world);
+        // let mut record = hit_record::HitRecord {
+        //     p: Point3::zero(),
+        //     normal_vec: Vec3::zero(),
+        //     t: 0.0,
+        //     front_face: false,
+        // };
+        if let Some(record) = world.hit(&ray, Interval::new(0.0001, f32::INFINITY)) {
+            if let Some(material) = &record.material {
+                let (scattered, attenuation) = material.scatter(&ray, &record);
+                return attenuation * self.ray_color(scattered, depth - 1, world);
+            }
+            return Color::zero();
+            // let direction = record.normal_vec + random_unit_vector();
+            // // let direction = random_on_hemisphere(record.normal_vec);
+            // return 0.5 * self.ray_color(Ray::new(record.p, direction), depth - 1, world);
         }
 
         let unit_direction = unit_vector(ray.direction);

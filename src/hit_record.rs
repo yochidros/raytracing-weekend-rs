@@ -1,20 +1,33 @@
+use std::sync::Arc;
+
 use crate::{
     interval::Interval,
+    material::Material,
     ray::Ray,
     vec3::{Point3, Vec3},
 };
 
 pub trait Hittable {
-    fn hit(&self, r: &Ray, interval: Interval, record: &mut HitRecord) -> bool {
-        false
-    }
+    fn hit(&self, r: &Ray, interval: Interval) -> Option<HitRecord>;
 }
 
 pub struct HitRecord {
     pub p: Point3,
     pub normal_vec: Vec3,
+    pub material: Option<Arc<dyn Material>>,
     pub t: f32,
     pub front_face: bool,
+}
+impl HitRecord {
+    pub fn new(p: Point3, normal_vec: Vec3, t: f32, front_face: bool) -> Self {
+        Self {
+            p,
+            normal_vec,
+            material: None,
+            t,
+            front_face,
+        }
+    }
 }
 
 impl HitRecord {
@@ -44,33 +57,16 @@ impl HittableList {
 }
 
 impl Hittable for HittableList {
-    fn hit(&self, r: &Ray, interval: Interval, record: &mut HitRecord) -> bool {
-        let mut temp_record = HitRecord {
-            p: Point3::zero(),
-            normal_vec: Vec3::zero(),
-            t: 0.0,
-            front_face: false,
-        };
-        let mut hit_anything = false;
+    fn hit(&self, r: &Ray, interval: Interval) -> Option<HitRecord> {
         let mut closest_so_far = interval.max;
 
         for object in &self.objects {
-            if object.hit(
-                r,
-                Interval::new(interval.min, closest_so_far),
-                &mut temp_record,
-            ) {
-                hit_anything = true;
-                closest_so_far = temp_record.t;
-                *record = HitRecord {
-                    p: temp_record.p,
-                    normal_vec: temp_record.normal_vec,
-                    t: temp_record.t,
-                    front_face: temp_record.front_face,
-                };
+            if let Some(rec) = object.hit(r, Interval::new(interval.min, closest_so_far)) {
+                closest_so_far = rec.t;
+                return Some(rec);
             }
         }
 
-        hit_anything
+        None
     }
 }

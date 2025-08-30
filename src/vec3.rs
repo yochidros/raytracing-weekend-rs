@@ -29,6 +29,10 @@ impl Vec3 {
     pub fn length_squared(&self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+        f32::abs(self.x) < s && f32::abs(self.y) < s && f32::abs(self.z) < s
+    }
     pub fn random() -> Self {
         Self::new(f32_random(), f32_random(), f32_random())
     }
@@ -91,6 +95,10 @@ pub fn random_on_hemisphere(normal_vec: Vec3) -> Vec3 {
     } else {
         -on_unit_sphere
     }
+}
+#[inline]
+pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
+    v - 2.0 * v.dot(n) * n
 }
 
 impl Index<usize> for Vec3 {
