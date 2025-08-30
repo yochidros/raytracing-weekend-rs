@@ -1,5 +1,7 @@
 # Ray Tracing in Rust
 
+https://raytracing.github.io/books/RayTracingInOneWeekend.html
+
 A compact ray tracer implemented in Rust. It renders PPM images and demonstrates core techniques: ray generation, surface intersection, materials and scattering, and a simple camera model.
 
 ## Overview
