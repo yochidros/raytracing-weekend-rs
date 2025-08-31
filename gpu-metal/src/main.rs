@@ -11,6 +11,9 @@ struct Pixel {
     b: f32,
 }
 
+const METAL_FILE_NAME: &str = "raytracing.metal";
+const METAL_FUNC_NAME: &str = "render_scene";
+
 #[allow(dead_code)]
 fn compute_pixels_with_shared_memory(
     width: usize,
@@ -22,7 +25,7 @@ fn compute_pixels_with_shared_memory(
     let device = MTLCreateSystemDefaultDevice().expect("No Metal device");
 
     // シェーダ読み込み
-    let path = format!("{}/background.metal", shader_dir);
+    let path = format!("{shader_dir}/{METAL_FILE_NAME}");
     let source = std::fs::read_to_string(path).unwrap();
     let source_ns = NSString::from_str(&source);
     let options = MTLCompileOptions::new();
@@ -31,7 +34,7 @@ fn compute_pixels_with_shared_memory(
         .expect("compile failed");
 
     let kernel = lib
-        .newFunctionWithName(&NSString::from_str("render_background"))
+        .newFunctionWithName(&NSString::from_str(METAL_FUNC_NAME))
         .unwrap();
     let pipeline = device
         .newComputePipelineStateWithFunction_error(&kernel)
@@ -89,7 +92,7 @@ fn compute_pixels_with_private_memory(
     let device = MTLCreateSystemDefaultDevice().expect("No Metal device");
 
     // シェーダ読み込み
-    let path = format!("{}/background.metal", shader_dir);
+    let path = format!("{shader_dir}/{METAL_FILE_NAME}");
     let source = std::fs::read_to_string(path).unwrap();
     let source_ns = NSString::from_str(&source);
     let options = MTLCompileOptions::new();
@@ -98,7 +101,7 @@ fn compute_pixels_with_private_memory(
         .expect("compile failed");
 
     let kernel = lib
-        .newFunctionWithName(&NSString::from_str("render_background"))
+        .newFunctionWithName(&NSString::from_str(METAL_FUNC_NAME))
         .unwrap();
     let pipeline = device
         .newComputePipelineStateWithFunction_error(&kernel)
@@ -174,20 +177,21 @@ fn main() {
     }
 
     let shader_dir = &argv[1];
-    let width = 256;
-    let height = 256;
+    let image_width = 400;
+    let aspect_ratio = 16.0 / 9.0;
+    let image_height = (image_width as f64 / aspect_ratio) as usize;
     // let pixels = compute_pixels_with_shared_memory(width, height, shader_dir);
-    let pixels = compute_pixels_with_private_memory(width, height, shader_dir);
+    let pixels = compute_pixels_with_private_memory(image_width, image_height, shader_dir);
 
     // PPM 出力
     let mut file = File::create("test_gpu.ppm").unwrap();
     writeln!(file, "P3").unwrap();
-    writeln!(file, "{} {}", width, height).unwrap();
+    writeln!(file, "{} {}", image_width, image_height).unwrap();
     writeln!(file, "255").unwrap();
 
-    for j in (0..height).rev() {
-        for i in 0..width {
-            let idx = j * width + i;
+    for j in (0..image_height).rev() {
+        for i in 0..image_width {
+            let idx = j * image_width + i;
             let p = pixels[idx];
             let ir = (255.999 * p.r) as i32;
             let ig = (255.999 * p.g) as i32;
