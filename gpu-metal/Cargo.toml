@@ -1,0 +1,10 @@
+[package]
+name = "gpu-metal"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+
+[dependencies]
+objc2 = "0.6"
+objc2-metal = "0.3"
+objc2-foundation = "0.3"

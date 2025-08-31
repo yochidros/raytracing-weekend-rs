@@ -1,5 +1,5 @@
 [workspace]
-members = [
+members = [ "gpu-metal",
     "single-cpu",
 ]
 resolver = "3"
